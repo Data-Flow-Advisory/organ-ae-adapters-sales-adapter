@@ -85,6 +85,14 @@ jobs:
       - name: Run pytest suite
         run: python -m pytest test_organ.py -v --tb=short
 
+      - name: Check connection ports (CONNECTORS.md stud standard)
+        run: |
+          # Asserts ports.json parses, every declared `type` exists in the
+          # shared vocabulary (types.json), and decide() actually reads each
+          # declared input name + writes each declared output name, sampled
+          # against the organ's own samples. See orchestrator/CONNECTORS.md.
+          python ports_check.py
+
       - name: Run organ against samples + contract checker
         run: |
           set -euo pipefail
