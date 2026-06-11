@@ -1,0 +1,32 @@
+{
+  "state": {
+    "pipeline_rows": [
+      {
+        "tenant_id": 6,
+        "tenant_slug": "gliderol",
+        "display_name": "Gliderol",
+        "pipeline_state": {
+          "stage": "proposal",
+          "stage_changed_at": "2026-05-28T00:00:00",
+          "deal_value_estimate_usd": 12000,
+          "deal_value_currency": "GBP"
+        }
+      },
+      {
+        "tenant_id": 9,
+        "tenant_slug": "holbeck",
+        "display_name": "Holbeck",
+        "pipeline_state": {
+          "stage": "discovery",
+          "stage_changed_at": "2026-06-09T00:00:00",
+          "deal_value_estimate_usd": 4000,
+          "deal_value_currency": "GBP"
+        }
+      }
+    ]
+  },
+  "context": {
+    "now": "2026-06-11T00:00:00",
+    "reason": "queue drained; pipeline backfill — feed Tim the stalled deals first"
+  }
+}

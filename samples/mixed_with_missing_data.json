@@ -1,0 +1,33 @@
+{
+  "state": {
+    "pipeline_rows": [
+      {
+        "tenant_id": 4,
+        "tenant_slug": "pilotco",
+        "display_name": "Pilot Co",
+        "pipeline_state": {
+          "stage": "pilot",
+          "stage_changed_at": "2026-04-20T00:00:00",
+          "deal_value_estimate_usd": null,
+          "deal_value_currency": null
+        }
+      },
+      {
+        "tenant_id": 5,
+        "tenant_slug": "slugonly",
+        "display_name": null,
+        "pipeline_state": {"stage": "blueprint"}
+      },
+      {
+        "tenant_id": 6,
+        "tenant_slug": "tooearly",
+        "display_name": "Too Early",
+        "pipeline_state": {"stage": "qualified", "deal_value_estimate_usd": 7000}
+      }
+    ]
+  },
+  "context": {
+    "now": "2026-06-11T00:00:00",
+    "reason": "two actionable (one with no value, one with no stage_changed_at + missing name) plus one qualified to skip"
+  }
+}

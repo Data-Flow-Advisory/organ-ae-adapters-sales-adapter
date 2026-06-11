@@ -1,0 +1,28 @@
+{
+  "state": {
+    "pipeline_rows": [
+      {
+        "tenant_id": 1,
+        "tenant_slug": "earlybird",
+        "display_name": "Early Bird Ltd",
+        "pipeline_state": {"stage": "lead", "deal_value_estimate_usd": 9999}
+      },
+      {
+        "tenant_id": 2,
+        "tenant_slug": "wonco",
+        "display_name": "Won & Co",
+        "pipeline_state": {"stage": "retained", "deal_value_estimate_usd": 50000}
+      },
+      {
+        "tenant_id": 3,
+        "tenant_slug": "deadlead",
+        "display_name": "Dead Lead Inc",
+        "pipeline_state": {"stage": "churned"}
+      }
+    ]
+  },
+  "context": {
+    "now": "2026-06-11T00:00:00",
+    "reason": "every deal is too-early/won/dead — nothing actionable for Tim"
+  }
+}
