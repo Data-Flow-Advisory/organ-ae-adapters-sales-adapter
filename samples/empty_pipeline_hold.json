@@ -1,0 +1,9 @@
+{
+  "state": {
+    "pipeline_rows": []
+  },
+  "context": {
+    "now": "2026-06-11T00:00:00",
+    "reason": "pipeline read returned no rows at all — hold, feed nothing (distinct from rows-present-but-none-actionable)"
+  }
+}

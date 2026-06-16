@@ -330,3 +330,116 @@ def test_cli_stdin_roundtrip():
 
 def test_get_candidates_alias():
     assert organ.get_candidates is organ.decide
+
+
+# ---------------------------------------------------------------------------
+# Sample-verdict pins — close the CI-blindness gap.
+#
+# The conformance workflow runs every samples/*.json through organ.py and the
+# contract checker, but the checker only asserts the *shape* (output / rationale
+# / self_metric.confidence-in-range). A sample whose verdict silently flipped —
+# because a sample file was edited, or the organ's decision logic drifted —
+# would still pass the shape check and CI would stay green. These tests pin each
+# sample file to its EXACT decided verdict, so a flip turns CI red.
+#
+# `_SAMPLE_EXPECTATIONS` is the source of truth; `test_no_unpinned_samples`
+# guards against adding a sample file without pinning it here (or deleting one
+# the pins still reference).
+# ---------------------------------------------------------------------------
+
+import os
+
+import pytest
+
+_SAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples")
+
+
+def _load_sample(name):
+    with open(os.path.join(_SAMPLES_DIR, name), encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _run_sample(name):
+    payload = _load_sample(name)
+    return decide(payload.get("state") or {}, payload.get("context") or {})
+
+
+# filename -> the exact verdict the organ must produce for that sample.
+_SAMPLE_EXPECTATIONS = {
+    "all_non_actionable_skip.json": {
+        "decision": "skip_none_actionable",
+        "confidence": 0.9,
+        "rows_considered": 3,
+        "candidates_fed": 0,
+        "rows_skipped": 3,
+        "candidate_order": [],            # tenant_ids in ranked order
+        "correlation_ids": [],
+        "skipped_stages": ["lead", "retained", "churned"],
+    },
+    "mixed_with_missing_data.json": {
+        "decision": "feed",
+        "confidence": 0.95,
+        "rows_considered": 3,
+        "candidates_fed": 2,
+        "rows_skipped": 1,
+        # Pilot Co (52 days) ranks above slugonly (0 days).
+        "candidate_order": [4, 5],
+        "correlation_ids": ["sales-4-pilot-pilotco", "sales-5-blueprint-slugonly"],
+        "skipped_stages": ["qualified"],
+    },
+    "two_actionable_ranked.json": {
+        "decision": "feed",
+        "confidence": 0.95,
+        "rows_considered": 2,
+        "candidates_fed": 2,
+        "rows_skipped": 0,
+        # Gliderol (14 days, £12k) ranks above Holbeck (2 days, £4k).
+        "candidate_order": [6, 9],
+        "correlation_ids": ["sales-6-proposal-gliderol", "sales-9-discovery-holbeck"],
+        "skipped_stages": [],
+    },
+    "empty_pipeline_hold.json": {
+        "decision": "hold_no_rows",
+        "confidence": 0.9,
+        "rows_considered": 0,
+        "candidates_fed": 0,
+        "rows_skipped": 0,
+        "candidate_order": [],
+        "correlation_ids": [],
+        "skipped_stages": [],
+    },
+}
+
+
+@pytest.mark.parametrize("name", sorted(_SAMPLE_EXPECTATIONS))
+def test_sample_verdict_pinned(name):
+    """Each sample file must decide to its pinned verdict, end to end."""
+    exp = _SAMPLE_EXPECTATIONS[name]
+    r = _run_sample(name)
+
+    sm = r["self_metric"]
+    assert sm["decision"] == exp["decision"], name
+    assert sm["confidence"] == exp["confidence"], name
+    assert sm["rows_considered"] == exp["rows_considered"], name
+    assert sm["candidates_fed"] == exp["candidates_fed"], name
+    assert sm["rows_skipped"] == exp["rows_skipped"], name
+
+    candidates = r["output"]["candidates"]
+    assert [c["tenant_id"] for c in candidates] == exp["candidate_order"], name
+    assert [c["correlation_id"] for c in candidates] == exp["correlation_ids"], name
+    assert [s["stage"] for s in r["output"]["skipped"]] == exp["skipped_stages"], name
+
+
+def test_no_unpinned_samples():
+    """Every sample file on disk must have a pinned verdict (and vice versa).
+
+    Catches the failure mode where someone drops a new samples/*.json (which CI
+    would happily shape-check) without adding a verdict pin, leaving its decided
+    behaviour unverified — and the reverse, a pin referencing a deleted file.
+    """
+    on_disk = {f for f in os.listdir(_SAMPLES_DIR) if f.endswith(".json")}
+    pinned = set(_SAMPLE_EXPECTATIONS)
+    assert on_disk == pinned, (
+        f"samples on disk and pinned verdicts diverged: "
+        f"unpinned={sorted(on_disk - pinned)}, missing_file={sorted(pinned - on_disk)}"
+    )
