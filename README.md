@@ -125,8 +125,35 @@ All tests are pure functions with deterministic inputs/outputs.
 - `samples/mixed_with_missing_data.json` — actionable deals with missing value /
   `stage_changed_at` / display name, plus one `qualified` deal to skip.
 
+## Connection ports (the Lego stud)
+
+Per orchestrator `CONNECTORS.md`, this organ declares a typed `ports.json` so a
+composer can wire it by type instead of by hand:
+
+| Direction | Name            | Type             | Notes |
+|-----------|-----------------|------------------|-------|
+| input     | `pipeline_rows` | `SalesPipeline`  | required — the CRM-lite pipeline rows the organ scans |
+| output    | `candidates`    | `FeedCandidates` | the ranked always-fed work-item directives for Tim |
+
+`SalesPipeline` and `FeedCandidates` are **proposed additions** to the shared
+vocabulary — no existing type fit sales-pipeline state or the always-fed
+candidate contract. They live (marked `_proposed`) in the vendored `types.json`
+snapshot here and need review/merge into `orchestrator/types.json`
+(`feat/drift-gate`). `FeedCandidates` is the shared output stud of the whole AE
+source-adapter family (github / sales / feedback).
+
+Not declared as ports (they aren't connection studs): `actionable_stages` (an
+optional static config override), `skipped` (a diagnostic audit list no organ
+consumes), and `now` (read from `context` — the clock sidecar). This mirrors the
+standard's own selective example.
+
+`python ports_check.py` (run in CI) asserts `ports.json` parses, every declared
+type exists in the vocabulary, and `decide()` really reads each declared input
+name and writes each declared output name, sampled against the organ's samples.
+
 ## References
 
+- orchestrator `CONNECTORS.md` — the connection standard (typed ports).
 - orchestrator `CONTRACT.md` — pure-organ specification.
 - discovery-engine `app/services/ae_adapters/sales_adapter.py` — original source.
 - `docs/strategic-review/always-fed-fleet-tasks.md` §1.1b — adapter spec.

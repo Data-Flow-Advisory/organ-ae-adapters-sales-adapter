@@ -1,0 +1,9 @@
+{
+  "_doc": "Connection-standard ports manifest for organ-ae-adapters-sales-adapter. See orchestrator/CONNECTORS.md (the Lego-stud standard). `name` is the literal wiring address — an input name is a key the organ reads under `state`; an output name is a key the organ writes under `output`. `type` is a name from the shared vocabulary (types.json) — the stud size; two ports connect iff their `type` matches. Following the standard's own selective example (organ-solutions-engine declares only its primary `blueprint` -> `recommendations` studs), this manifest declares the genuine connection wires, not every key the organ touches. Intentionally NOT declared as ports: `actionable_stages` (an optional static config override on `state`, not a wire another organ drives), `skipped` (a diagnostic audit list under `output` that no organ consumes today), and `now` (read from `context` — the clock sidecar, not a `state` wire).",
+  "inputs": [
+    {"name": "pipeline_rows", "type": "SalesPipeline", "required": true}
+  ],
+  "outputs": [
+    {"name": "candidates", "type": "FeedCandidates"}
+  ]
+}

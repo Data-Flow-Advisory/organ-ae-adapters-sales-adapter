@@ -330,3 +330,66 @@ def test_cli_stdin_roundtrip():
 
 def test_get_candidates_alias():
     assert organ.get_candidates is organ.decide
+
+
+# ---------------------------------------------------------------------------
+# Connection-standard ports manifest (CONNECTORS.md "the stud").
+# ---------------------------------------------------------------------------
+
+import os  # noqa: E402
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def _load(name):
+    with open(os.path.join(_HERE, name), encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def test_ports_manifest_parses_and_is_wellformed():
+    ports = _load("ports.json")
+    assert isinstance(ports["inputs"], list) and ports["inputs"]
+    assert isinstance(ports["outputs"], list) and ports["outputs"]
+    for p in ports["inputs"] + ports["outputs"]:
+        assert isinstance(p["name"], str) and p["name"]
+        assert isinstance(p["type"], str) and p["type"]
+
+
+def test_ports_types_exist_in_vocabulary():
+    ports = _load("ports.json")
+    vocab = set(_load("types.json")["types"].keys())
+    for p in ports["inputs"] + ports["outputs"]:
+        assert p["type"] in vocab, f"{p['type']} missing from types.json"
+
+
+def test_declared_input_names_read_from_state_in_samples():
+    ports = _load("ports.json")
+    sdir = os.path.join(_HERE, "samples")
+    samples = [_load(os.path.join("samples", f))
+               for f in sorted(os.listdir(sdir)) if f.endswith(".json")]
+    for p in ports["inputs"]:
+        present = [s for s in samples if p["name"] in (s.get("state") or {})]
+        if p.get("required"):
+            assert len(present) == len(samples), f"required input {p['name']} missing from a sample"
+        assert present, f"input {p['name']} appears in no sample"
+
+
+def test_declared_output_names_written_by_decide_on_samples():
+    ports = _load("ports.json")
+    out_names = [p["name"] for p in ports["outputs"]]
+    sdir = os.path.join(_HERE, "samples")
+    for f in sorted(os.listdir(sdir)):
+        if not f.endswith(".json"):
+            continue
+        s = _load(os.path.join("samples", f))
+        result = decide(s.get("state") or {}, s.get("context") or {})
+        for name in out_names:
+            assert name in result["output"], f"{name} not written for sample {f}"
+
+
+def test_ports_check_script_passes():
+    proc = subprocess.run(
+        [sys.executable, "ports_check.py"],
+        capture_output=True, text=True, cwd=_HERE,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
