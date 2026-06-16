@@ -1,0 +1,48 @@
+{
+  "_README": "Typed port manifest per the Connection Standard (CONNECTORS.md). The composer wires two ports iff their `type` matches a name in the shared vocabulary (types.json). `name` is the literal wiring address: an input is read under state[name] (or context[name]); an output is written under output[name]. The `_checked` block records corpus + OSS audit freshness per docs/architecture/corpus-oss-sweep.md.",
+  "organ": "organ-ae-adapters-sales-adapter",
+  "inputs": [
+    {
+      "name": "pipeline_rows",
+      "type": "PipelineRows",
+      "required": true,
+      "desc": "Pre-fetched sales-pipeline rows (result of sales_pipeline.list_pipeline()): list of {tenant_id, tenant_slug, display_name, pipeline_state:{stage, stage_changed_at, deal_value_estimate_usd, deal_value_currency}}.",
+      "where": "state"
+    },
+    {
+      "name": "actionable_stages",
+      "type": "StageList",
+      "required": false,
+      "desc": "Optional override of the actionable stage set; defaults to {discovery, blueprint, proposal, pilot}.",
+      "where": "state"
+    },
+    {
+      "name": "now",
+      "type": "IsoTimestamp",
+      "required": false,
+      "desc": "Reference time (ISO string) for days_in_stage. Absent -> every deal reports days_in_stage=0.",
+      "where": "context"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "candidates",
+      "type": "AlwaysFedCandidates",
+      "desc": "Actionable deals turned into always-fed work-item directives routed to Tim (persona_project_id=8), ranked days_in_stage DESC then deal_value DESC. Each: {directive, persona_project_id, tenant_id, correlation_id, requires_worker_type}."
+    },
+    {
+      "name": "skipped",
+      "type": "SkippedRows",
+      "desc": "Non-actionable rows (lead/qualified/retained/churned/unknown) with a skip reason."
+    }
+  ],
+  "_proposed_types": ["PipelineRows", "StageList", "IsoTimestamp", "AlwaysFedCandidates", "SkippedRows"],
+  "_proposed_types_note": "These types are not yet in the orchestrator's types.json. They mirror the always-fed candidate contract and sales_pipeline row shape; described here for vocabulary review (CONNECTORS.md: new types are reviewed, not minted freely).",
+  "_checked": {
+    "corpus_checked": "2026-06-11",
+    "oss_checked": "2026-06-11",
+    "corpus_verdict": "keep",
+    "oss_verdict": "keep",
+    "note": "CORPUS: unique sales-pipeline source adapter in the organ corpus; no duplicate. Faithfully mirrors discovery-engine app/services/ae_adapters/sales_adapter.py (ACTIONABLE_STAGES, TIM_PERSONA_PROJECT_ID=8, days_in_stage DESC then deal_value DESC ranking, sales-{tenant}-{stage}-{slug} correlation_id); 35/35 tests pass. OSS: no permissive drop-in library exists for selecting actionable internal-pipeline deals + ranking them to feed an internal persona under the always-fed candidate contract; market builds custom (pandas) or uses full CRM apps. Adopting a dep would regress the stdlib-only pure-organ contract. Audited item #19879."
+  }
+}
